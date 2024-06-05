@@ -1,0 +1,51 @@
+version: "3.8"
+services:
+  node-server:
+    container_name: elasticsearch-example
+    restart: always
+    build:
+      dockerfile: ./Dockerfile
+    ports:
+      - 5002:5001
+    networks:
+      - mongo_network
+      - elasticsearch_network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+  mongodb:
+    container_name: elasticsearch-mongodb
+    restart: always
+    image: mongo:5.0.24
+    ports:
+      - 27018:27017
+    networks:
+      - mongo_network
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: echo 'db.stats().ok' | mongo localhost:27017/example --quiet
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+  elasticsearch:
+    container_name: elasticsearch-elasticsearch
+    restart: always
+    image: elasticsearch:8.13.4
+    environment:
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - 9201:9200
+    networks:
+      - elasticsearch_network
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+volumes:
+  mongodb-data:
+  elasticsearch-data:
+networks:
+  mongo_network:
+    name: mongo_network
+  elasticsearch_network:
+    name: elasticsearch
